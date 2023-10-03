@@ -1,4 +1,4 @@
-import { Token, TokenKind, Span, Program, Stmt, LetStmt, Expr, PrimaryExpr, NumberExpr, StringExpr, NameExpr, PlusExpr } from "./ast.ts";
+import { Token, TokenKind, Program, Stmt, LetStmt, Expr, PrimaryExpr, NumberExpr, StringExpr, NameExpr, PlusExpr } from "./ast.ts";
 import { LexerError } from "./lexer.ts";
 
 export type ParseError = LexerError;

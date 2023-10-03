@@ -1,6 +1,6 @@
 import { Program } from "./ast.ts";
 import { Lexer } from "./lexer.ts";
-import { Parser, ParseError } from "./parser.ts";
+import { Parser } from "./parser.ts";
 import { TypeChecker, TypeCheckError } from "./checker.ts";
 
 export type CompilerArtifact = {

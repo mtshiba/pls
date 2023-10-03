@@ -1,6 +1,6 @@
-import { TypeCheckError } from './checker.ts';
-import { Compiler } from './compiler.ts';
-import { Program } from './ast.ts';
+import { TypeCheckError } from '../compiler/checker.ts';
+import { Compiler } from '../compiler/compiler.ts';
+import { Program } from '../compiler/ast.ts';
 
 import * as process from 'node:process';
 
