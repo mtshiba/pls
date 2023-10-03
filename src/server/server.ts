@@ -1,6 +1,7 @@
+import { Lexer } from '../compiler/lexer.ts';
 import { TypeCheckError } from '../compiler/checker.ts';
 import { Compiler } from '../compiler/compiler.ts';
-import { Program } from '../compiler/ast.ts';
+import { Program, Token } from '../compiler/ast.ts';
 
 import * as process from 'node:process';
 
@@ -68,7 +69,13 @@ class Server {
             return null;
         }
         this.buffer = body.slice(length);
-        return JSON.parse(payload);
+        try {
+            return JSON.parse(payload);
+        } catch (_e) {
+            let fallback = JSON.parse(payload + this.buffer);
+            this.buffer = "";
+            return fallback;
+        }
     }
 
     send(json: JSONRPC) {
@@ -130,11 +137,15 @@ class Server {
                 let uri = msg.params.textDocument.uri;
                 for (let change of msg.params.contentChanges) {
                     this.fs.write(uri, change.text);
-                    this.check(uri, change.text);
+                    // this.check(uri, change.text);
                 }
                 break;
             }
             case 'textDocument/didSave': {
+                this.send_log(`didSave: ${JSON.stringify(msg)}`);
+                let uri = msg.params.textDocument.uri;
+                let input = this.fs.read(uri);
+                this.check(uri, input);
                 break;
             }
             default: {
@@ -156,6 +167,11 @@ class Server {
             case 'exit': {
                 process.exit(0);
             }
+            case 'textDocument/semanticTokens/full': {
+                this.send_log(`semanticTokens/full: ${JSON.stringify(msg)}`);
+                this.handle_semantic_tokens_full(msg);
+                break;
+            }
             default: {
                 this.send_log(`Unknown request: ${msg.method}`);
             }
@@ -172,6 +188,20 @@ class Server {
             {
                 capabilities: {
                     textDocumentSync: 1, // FULL
+                    semanticTokensProvider: {
+                        range: false,
+                        full: true,
+                        legend: {
+                            tokenTypes: [
+                                "number",   // 0
+                                "string",   // 1
+                                "variable", // 2
+                                "operator", // 3
+                                "keyword",  // 4
+                            ],
+                            tokenModifiers: []
+                        }
+                    }
                 },
             },
         )
@@ -199,6 +229,66 @@ class Server {
             diagnostics: diags,
         };
         this.send_notification('textDocument/publishDiagnostics', params);
+    }
+
+    handle_semantic_tokens_full(msg: Message) {
+        let uri = msg.params.textDocument.uri;
+        let input = this.fs.read(uri);
+        let lexer = new Lexer();
+        let { tokens } = lexer.lex(input);
+        let data = [];
+        let prev_token: Token = {
+            type: "dummy",
+            span: {
+                start: { line: 0, character: 0 },
+                end: { line: 0, character: 0 },
+            },
+            value: "",
+        };
+        for (let token of tokens) {
+            let type: number;
+            switch (token.type) {
+                case "number": {
+                    type = 0;
+                    break;
+                }
+                case "string": {
+                    type = 1;
+                    break;
+                }
+                case "name": {
+                    type = 2;
+                    break;
+                }
+                case "equal":
+                case "plus": {
+                    type = 3;
+                    break;
+                }
+                case "let": {
+                    type =  4;
+                    break;
+                }
+                default: {
+                    continue;
+                }
+            }
+            let deltaLine = token.span.start.line - prev_token.span.end.line;
+            let deltaChar: number;
+            if (deltaLine != 0) {
+                deltaChar = token.span.start.character;
+            } else {
+                deltaChar = token.span.start.character - prev_token.span.start.character;
+            }
+            let length = token.value.length;
+            let tokenModifiers = 0;
+            data.push(deltaLine, deltaChar, length, type, tokenModifiers);
+            prev_token = token;
+        }
+        let params = {
+            data,
+        };
+        this.send_response(msg.id, params);
     }
 }
 

@@ -44,6 +44,16 @@ export class Parser {
         };
     }
 
+    parseString(input: string): ParseResult {
+        let lexer = new Lexer();
+        let { tokens, errors } = lexer.lex(input);
+        let { program, errors: parseErrors } = this.parse(tokens);
+        return {
+            errors: [...errors, ...parseErrors],
+            program,
+        };
+    }
+
     parseStmt(): Stmt {
         while (this.cur_is("newline")) {
             this.cursor++;

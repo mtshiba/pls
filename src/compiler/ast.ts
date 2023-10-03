@@ -1,4 +1,4 @@
-export type TokenKind = 'number' | 'string' | 'name' | 'let' | 'equal' | 'plus' | 'lparen' | 'rparen' | 'newline' | 'eof';
+export type TokenKind = 'number' | 'string' | 'name' | 'let' | 'equal' | 'plus' | 'lparen' | 'rparen' | 'newline' | 'eof' | 'dummy';
 
 export type Position = {
     line: number;
