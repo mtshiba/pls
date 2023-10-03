@@ -1,4 +1,5 @@
-import { Compiler, TypeCheckError } from './compiler.ts';
+import { TypeCheckError } from './checker.ts';
+import { Compiler } from './compiler.ts';
 import { Program } from './ast.ts';
 
 import * as process from 'node:process';
@@ -118,15 +119,18 @@ class Server {
             }
             case 'textDocument/didOpen': {
                 this.send_log(`didOpen: ${JSON.stringify(msg)}`);
-                this.fs.write(msg.params.textDocument.uri, msg.params.textDocument.text);
-                this.check(msg.params.textDocument.text);
+                let uri = msg.params.textDocument.uri;
+                let input = msg.params.textDocument.text;
+                this.fs.write(uri, input);
+                this.check(uri, input);
                 break;
             }
             case 'textDocument/didChange': {
                 this.send_log(`didChange: ${JSON.stringify(msg)}`);
+                let uri = msg.params.textDocument.uri;
                 for (let change of msg.params.contentChanges) {
-                    this.fs.write(msg.params.textDocument.uri, change.text);
-                    this.check(change.text);
+                    this.fs.write(uri, change.text);
+                    this.check(uri, change.text);
                 }
                 break;
             }
@@ -173,15 +177,28 @@ class Server {
         )
     }
 
-    check(input: string) {
+    check(uri: string, input: string) {
         this.compiler = new Compiler();
         let { program, errors } = this.compiler.compile(input);
         this.program = program;
-        this.send_diagnostics(errors);
+        this.send_diagnostics(uri, errors);
     }
 
-    send_diagnostics(errors: TypeCheckError[]) {
-        // console.log('Sending diagnostics');
+    send_diagnostics(uri: string, errors: TypeCheckError[]) {
+        let diags = [];
+        for (let error of errors) {
+            diags.push({
+                range: error.span,
+                severity: 1, // ERROR
+                source: 'pls',
+                message: error.message,
+            });
+        }
+        let params = {
+            uri,
+            diagnostics: diags,
+        };
+        this.send_notification('textDocument/publishDiagnostics', params);
     }
 }
 

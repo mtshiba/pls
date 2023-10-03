@@ -1,39 +1,7 @@
-import { Token, Span, Program } from "./ast.ts";
-
-class Lexer {
-    lex(input: string): Token[] {
-        let tokens: Token[] = [];
-        let line = 1;
-        let character = 0;
-
-        return tokens;
-    }
-}
-
-type ParseError = {
-    message: string;
-    span: Span;
-};
-export type TypeCheckError = ParseError;
-type ParseResult = {
-    errors: ParseError[];
-    program: Program;
-}
-
-class Parser {
-    parse(tokens: Token[]): ParseResult {
-        let errors: ParseError[] = [];
-        let program: Program = [];
-
-        return { program, errors };
-    }
-}
-
-class TypeChecker {
-    check(program: Program): TypeCheckError[] {
-        return [];
-    }
-}
+import { Program } from "./ast.ts";
+import { Lexer } from "./lexer.ts";
+import { Parser, ParseError } from "./parser.ts";
+import { TypeChecker, TypeCheckError } from "./checker.ts";
 
 export type CompilerArtifact = {
     program: Program;
@@ -46,13 +14,29 @@ export class Compiler {
         let parser = new Parser();
         let checker = new TypeChecker();
 
-        let tokens = lexer.lex(input);
-        let { program, errors } = parser.parse(tokens);
+        let { tokens, errors: lexErrors } = lexer.lex(input);
+        let { program, errors: parseErrors } = parser.parse(tokens);
         let typeCheckErrors = checker.check(program);
 
         return {
             program,
-            errors: [...errors, ...typeCheckErrors],
+            errors: [...lexErrors, ...parseErrors, ...typeCheckErrors],
         };
     }
+}
+
+function main() {
+    let input = `
+let i = 1
+
+i + "aaa"
+`;
+    let compiler = new Compiler();
+    let { program, errors } = compiler.compile(input);
+    console.log(program);
+    console.log(errors);
+}
+
+if (import.meta["main"]) {
+    main();
 }
