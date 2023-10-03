@@ -1,3 +1,5 @@
+import { Token, Span, Program } from "./ast.ts";
+
 class Lexer {
     lex(input: string): Token[] {
         let tokens: Token[] = [];
@@ -12,7 +14,7 @@ type ParseError = {
     message: string;
     span: Span;
 };
-type TypeCheckError = ParseError;
+export type TypeCheckError = ParseError;
 type ParseResult = {
     errors: ParseError[];
     program: Program;
@@ -33,12 +35,12 @@ class TypeChecker {
     }
 }
 
-type CompilerArtifact = {
+export type CompilerArtifact = {
     program: Program;
     errors: TypeCheckError[];
 };
 
-class Compiler {
+export class Compiler {
     public compile(input: string): CompilerArtifact {
         let lexer = new Lexer();
         let parser = new Parser();

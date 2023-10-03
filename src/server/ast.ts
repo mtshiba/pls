@@ -1,15 +1,15 @@
-type TokenKind = 'number' | 'string' | 'name' | 'let' | 'plus';
+export type TokenKind = 'number' | 'string' | 'name' | 'let' | 'plus';
 
-type Position = {
+export type Position = {
     line: number;
     character: number;
 };
-type Span = {
+export type Span = {
     start: Position;
     end: Position;
 };
 
-class Token {
+export class Token {
     type: TokenKind;
     value: string;
     span: Span;
@@ -21,33 +21,33 @@ class Token {
     }
 }
 
-type NumberExpr = {
+export type NumberExpr = {
     type: 'NumberExpr';
     token: Token;
 };
 
-type StringExpr = {
+export type StringExpr = {
     type: 'StringExpr';
     token: Token;
 };
 
-type NameExpr = {
+export type NameExpr = {
     type: 'NameExpr';
     token: Token;
 };
 
-type PlusExpr = {
+export type PlusExpr = {
     type: 'BinaryExpr';
     left: Expr;
     right: Expr;
 };
 
-type LetStmt = {
+export type LetStmt = {
     type: 'LetStmt';
     name: Token;
     value: Expr;
 };
 
-type Expr = NumberExpr | StringExpr | NameExpr | PlusExpr;
-type Stmt = LetStmt | Expr;
-type Program = Stmt[];
+export type Expr = NumberExpr | StringExpr | NameExpr | PlusExpr;
+export type Stmt = LetStmt | Expr;
+export type Program = Stmt[];
