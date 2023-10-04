@@ -172,6 +172,8 @@ export class Lexer {
                 case "=":
                 case "+":
                 case "\n":
+                case "(":
+                case ")":
                 case " ":
                 case "": {
                     return this.consume("name", content);
