@@ -1,7 +1,9 @@
-import { Lexer } from '../compiler/lexer.ts';
 import { TypeCheckError } from '../compiler/checker.ts';
 import { Compiler } from '../compiler/compiler.ts';
-import { Program, Token } from '../compiler/ast.ts';
+import { Program } from '../compiler/ast.ts';
+
+import { handle_semantic_tokens_full } from './semantic.ts';
+import { handle_completion } from './completion.ts';
 
 import * as process from 'node:process';
 
@@ -14,7 +16,7 @@ type JSONRPC = {
     error?: any;
 };
 
-type Message = {
+export type Message = {
     jsonrpc: '2.0';
     id?: number;
     method?: string;
@@ -33,7 +35,7 @@ class VirtualFileSystem {
     }
 }
 
-class Server {
+export class Server {
     compiler: Compiler;
     program: Program;
     fs: VirtualFileSystem = new VirtualFileSystem();
@@ -63,19 +65,13 @@ class Server {
         } else {
             return null;
         }
-        let body = this.buffer.split("\r\n\r\n")[1];
+        let body = this.buffer.split("\r\n\r\n").slice(1).join("\r\n\r\n");
         let payload = body.slice(0, length);
         if (payload.length == 0) {
             return null;
         }
         this.buffer = body.slice(length);
-        try {
-            return JSON.parse(payload);
-        } catch (_e) {
-            let fallback = JSON.parse(payload + this.buffer);
-            this.buffer = "";
-            return fallback;
-        }
+        return JSON.parse(payload);
     }
 
     send(json: JSONRPC) {
@@ -169,12 +165,12 @@ class Server {
             }
             case 'textDocument/semanticTokens/full': {
                 this.send_log(`semanticTokens/full: ${JSON.stringify(msg)}`);
-                this.handle_semantic_tokens_full(msg);
+                handle_semantic_tokens_full(this, msg);
                 break;
             }
             case 'textDocument/completion': {
                 this.send_log(`completion: ${JSON.stringify(msg)}`);
-                this.handle_completion(msg);
+                handle_completion(this, msg);
                 break;
             }
             default: {
@@ -238,84 +234,6 @@ class Server {
             diagnostics: diags,
         };
         this.send_notification('textDocument/publishDiagnostics', params);
-    }
-
-    handle_semantic_tokens_full(msg: Message) {
-        let uri = msg.params.textDocument.uri;
-        let input = this.fs.read(uri);
-        let lexer = new Lexer();
-        let { tokens } = lexer.lex(input);
-        let data = [];
-        let prev_token: Token = {
-            type: "dummy",
-            span: {
-                start: { line: 0, character: 0 },
-                end: { line: 0, character: 0 },
-            },
-            value: "",
-        };
-        for (let token of tokens) {
-            let type: number;
-            switch (token.type) {
-                case "number": {
-                    type = 0;
-                    break;
-                }
-                case "string": {
-                    type = 1;
-                    break;
-                }
-                case "name": {
-                    type = 2;
-                    break;
-                }
-                case "equal":
-                case "plus": {
-                    type = 3;
-                    break;
-                }
-                case "let": {
-                    type =  4;
-                    break;
-                }
-                default: {
-                    continue;
-                }
-            }
-            let deltaLine = token.span.start.line - prev_token.span.end.line;
-            let deltaChar: number;
-            if (deltaLine != 0) {
-                deltaChar = token.span.start.character;
-            } else {
-                deltaChar = token.span.start.character - prev_token.span.start.character;
-            }
-            let length = token.value.length;
-            let tokenModifiers = 0;
-            data.push(deltaLine, deltaChar, length, type, tokenModifiers);
-            prev_token = token;
-        }
-        let params = {
-            data,
-        };
-        this.send_response(msg.id, params);
-    }
-
-    handle_completion(msg: Message) {
-        // let uri = msg.params.textDocument.uri;
-        // let position = msg.params.position;
-        let items = [];
-        for (let [name, varInfo] of Object.entries(this.compiler.checker.context.names)) {
-            items.push({
-                label: name,
-                kind: 6, // VARIABLE
-                detail: varInfo.type,
-            });
-        }
-        let params = {
-            isIncomplete: false,
-            items,
-        };
-        this.send_response(msg.id, params);
     }
 }
 
