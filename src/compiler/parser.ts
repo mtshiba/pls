@@ -17,8 +17,21 @@ export class Parser {
         return this.tokens[this.cursor];
     }
 
+    next() {
+        if (!this.cur_is("eof")) {
+            this.cursor++;
+        }
+    }
+
     cur_is(type: TokenKind): boolean {
         return this.peek() !== undefined &&  this.peek().type === type;
+    }
+
+    next_line() {
+        while (!this.cur_is("newline")) {
+            this.next();
+        }
+        this.next();
     }
 
     expect(type: TokenKind) {
@@ -35,7 +48,7 @@ export class Parser {
         while (!this.cur_is("eof")) {
             this.program.push(this.parseStmt());
             while (this.cur_is("newline")) {
-                this.cursor++;
+                this.next();
             }
         }
         return {
@@ -56,7 +69,7 @@ export class Parser {
 
     parseStmt(): Stmt {
         while (this.cur_is("newline")) {
-            this.cursor++;
+            this.next();
         }
         switch (this.peek().type) {
             case "let": {
@@ -71,13 +84,13 @@ export class Parser {
     parseLetStmt(): LetStmt {
         this.expect("let");
         let letToken = this.peek();
-        this.cursor++;
+        this.next();
         this.expect("name");
         let name = this.peek();
-        this.cursor++;
+        this.next();
         this.expect("equal");
         let _equal = this.peek();
-        this.cursor++;
+        this.next();
         let value = this.parseExpr();
         return {
             type: "LetStmt",
@@ -105,7 +118,7 @@ export class Parser {
                 });
                 let token = this.peek();
                 if (!this.cur_is("eof")) {
-                    this.cursor++;
+                    this.next();
                 }
                 return {
                     type: "DummyExpr",
@@ -125,7 +138,7 @@ export class Parser {
 
     parseNumberExpr(): NumberExpr {
         let token = this.peek();
-        this.cursor++;
+        this.next();
         return {
             type: "NumberExpr",
             token,
@@ -134,7 +147,7 @@ export class Parser {
 
     parseStringExpr(): StringExpr {
         let token = this.peek();
-        this.cursor++;
+        this.next();
         return {
             type: "StringExpr",
             token,
@@ -143,7 +156,7 @@ export class Parser {
 
     parseNameExpr(): NameExpr {
         let token = this.peek();
-        this.cursor++;
+        this.next();
         return {
             type: "NameExpr",
             token,
@@ -153,7 +166,7 @@ export class Parser {
     parseBinaryExpr(left: Expr): PlusExpr {
         this.expect("plus");
         let plusToken = this.peek();
-        this.cursor++;
+        this.next();
         let right = this.parsePrimary();
         return {
             type: "BinaryExpr",

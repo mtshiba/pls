@@ -172,6 +172,11 @@ class Server {
                 this.handle_semantic_tokens_full(msg);
                 break;
             }
+            case 'textDocument/completion': {
+                this.send_log(`completion: ${JSON.stringify(msg)}`);
+                this.handle_completion(msg);
+                break;
+            }
             default: {
                 this.send_log(`Unknown request: ${msg.method}`);
             }
@@ -201,6 +206,10 @@ class Server {
                             ],
                             tokenModifiers: []
                         }
+                    },
+                    completionProvider: {
+                        resolveProvider: false,
+                        triggerCharacters: [" "]
                     }
                 },
             },
@@ -287,6 +296,24 @@ class Server {
         }
         let params = {
             data,
+        };
+        this.send_response(msg.id, params);
+    }
+
+    handle_completion(msg: Message) {
+        // let uri = msg.params.textDocument.uri;
+        // let position = msg.params.position;
+        let items = [];
+        for (let [name, varInfo] of Object.entries(this.compiler.checker.context.names)) {
+            items.push({
+                label: name,
+                kind: 6, // VARIABLE
+                detail: varInfo.type,
+            });
+        }
+        let params = {
+            isIncomplete: false,
+            items,
         };
         this.send_response(msg.id, params);
     }

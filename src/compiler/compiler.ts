@@ -9,14 +9,14 @@ export type CompilerArtifact = {
 };
 
 export class Compiler {
+    checker: TypeChecker = new TypeChecker();
     public compile(input: string): CompilerArtifact {
         let lexer = new Lexer();
         let parser = new Parser();
-        let checker = new TypeChecker();
 
         let { tokens, errors: lexErrors } = lexer.lex(input);
         let { program, errors: parseErrors } = parser.parse(tokens);
-        let typeCheckErrors = checker.check(program);
+        let typeCheckErrors = this.checker.check(program);
 
         return {
             program,
