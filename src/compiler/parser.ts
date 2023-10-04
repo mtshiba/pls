@@ -10,10 +10,10 @@ export type ParseResult = {
 export class Parser {
     errors: ParseError[] = [];
     program: Program = [];
-    tokens: Token[];
+    tokens: Token[] = [];
     cursor: number = 0;
 
-    peek(): Token | undefined {
+    peek(): Token {
         return this.tokens[this.cursor];
     }
 
@@ -24,7 +24,7 @@ export class Parser {
     }
 
     cur_is(type: TokenKind): boolean {
-        return this.peek() !== undefined &&  this.peek().type === type;
+        return this.peek().type === type;
     }
 
     next_line() {
@@ -187,6 +187,6 @@ function main() {
     console.log(`Errors: ${JSON.stringify(errors)}`);
 }
 
-if (import.meta["main"]) {
+if (import.meta.main) {
     main();
 }

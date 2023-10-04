@@ -4,10 +4,11 @@ import { Program } from '../compiler/ast.ts';
 
 import { handle_semantic_tokens_full } from './semantic.ts';
 import { handle_completion } from './completion.ts';
+import { handle_hover } from './hover.ts';
 
 import * as process from 'node:process';
 
-type JSONRPC = {
+export type JSONRPC = {
     jsonrpc: '2.0';
     id?: number;
     method?: string;
@@ -15,12 +16,21 @@ type JSONRPC = {
     result?: any;
     error?: any;
 };
-
-export type Message = {
+export type Request = {
     jsonrpc: '2.0';
-    id?: number;
-    method?: string;
+    id: number;
+    method: string;
     params: any;
+};
+export type Notification = {
+    jsonrpc: '2.0';
+    method: string;
+    params: any;
+};
+export type Response = {
+    jsonrpc: '2.0';
+    id: number;
+    result: any;
 };
 
 class VirtualFileSystem {
@@ -36,8 +46,8 @@ class VirtualFileSystem {
 }
 
 export class Server {
-    compiler: Compiler;
-    program: Program;
+    compiler: Compiler = new Compiler();
+    program: Program | null = null;
     fs: VirtualFileSystem = new VirtualFileSystem();
     buffer: string = "";
 
@@ -51,7 +61,7 @@ export class Server {
         });
     }
 
-    receive(): Message | null {
+    receive(): JSONRPC | null {
         let input = process.stdin.read();
         // The message may be interrupted and `stdin.read()` may return `null`.
         // So, `Server` stores the message in a `buffer` until a complete message is ready.
@@ -104,17 +114,20 @@ export class Server {
         this.send_notification('window/logMessage', params);
     }
 
-    dispatch(msg: Message) {
+    dispatch(msg: JSONRPC) {
         if (msg.method == undefined) {
-            this.handle_response(msg);
+            let resp = msg as Response;
+            this.handle_response(resp);
         } else if (msg.id == undefined) {
-            this.handle_notification(msg);
+            let notif = msg as Notification;
+            this.handle_notification(notif);
         } else {
-            this.handle_request(msg);
+            let req = msg as Request;
+            this.handle_request(req);
         }
     }
 
-    handle_notification(msg: Message) {
+    handle_notification(msg: Notification) {
         switch (msg.method) {
             case "initialized": {
                 this.send_log("successfully bounded");
@@ -150,7 +163,7 @@ export class Server {
         }
     }
 
-    handle_request(msg: Message) {
+    handle_request(msg: Request) {
         switch (msg.method) {
             case 'initialize': {
                 this.initialize(msg);
@@ -173,17 +186,22 @@ export class Server {
                 handle_completion(this, msg);
                 break;
             }
+            case 'textDocument/hover': {
+                this.send_log(`hover: ${JSON.stringify(msg)}`);
+                handle_hover(this, msg);
+                break;
+            }
             default: {
                 this.send_log(`Unknown request: ${msg.method}`);
             }
         }
     }
 
-    handle_response(msg: Message) {
+    handle_response(msg: Response) {
         this.send_log(`Unknown response: ${msg}`);
     }
 
-    initialize(msg: Message) {
+    initialize(msg: Request) {
         this.send_response(
             msg.id,
             {
@@ -206,7 +224,8 @@ export class Server {
                     completionProvider: {
                         resolveProvider: false,
                         triggerCharacters: [" "]
-                    }
+                    },
+                    hoverProvider: true,
                 },
             },
         )
@@ -242,6 +261,6 @@ function main() {
     server.run();
 }
 
-if (import.meta["main"]) {
+if (import.meta.main) {
     main();
 }

@@ -15,7 +15,7 @@ export class Lexer {
     cursor: number = 0;
     line: number = 0;
     character: number = 0;
-    input: string;
+    input: string = "";
 
     peek(): string {
         return this.input.charAt(this.cursor);
@@ -192,6 +192,6 @@ function main() {
     console.log(`Tokens: ${JSON.stringify(tokens)}`);
 }
 
-if (import.meta["main"]) {
+if (import.meta.main) {
     main();
 }

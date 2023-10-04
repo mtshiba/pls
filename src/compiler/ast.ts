@@ -104,3 +104,31 @@ export function spanOfExpr(expr: Expr): Span {
         }
     }
 }
+
+export function contains(target: Span, pos: Position): boolean {
+    if (pos.line < target.start.line || pos.line > target.end.line) {
+        return false;
+    }
+    if (pos.line === target.start.line && pos.character < target.start.character) {
+        return false;
+    }
+    if (pos.line === target.end.line && pos.character > target.end.character) {
+        return false;
+    }
+    return true;
+}
+
+export function exprToString(expr: Expr): string {
+    switch (expr.type) {
+        case 'NumberExpr':
+        case 'StringExpr':
+        case 'NameExpr':
+            return expr.token.value;
+        case 'BinaryExpr': {
+            return `${exprToString(expr.left)} ${expr.plusToken.value} ${exprToString(expr.right)}`;
+        }
+        case 'DummyExpr': {
+            return expr.tokens.map(t => t.value).join(' ');
+        }
+    }
+}

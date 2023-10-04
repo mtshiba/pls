@@ -1,6 +1,6 @@
-import { Message, Server } from "./server.ts";
+import { Request, Server } from "./server.ts";
 
-export function handle_completion(server: Server, msg: Message) {
+export function handle_completion(server: Server, msg: Request) {
     // let uri = msg.params.textDocument.uri;
     // let position = msg.params.position;
     let items = [];
@@ -11,9 +11,9 @@ export function handle_completion(server: Server, msg: Message) {
             detail: varInfo.type,
         });
     }
-    let params = {
+    let result = {
         isIncomplete: false,
         items,
     };
-    server.send_response(msg.id, params);
+    server.send_response(msg.id, result);
 }

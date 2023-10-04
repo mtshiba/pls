@@ -116,6 +116,6 @@ function main() {
     console.log(`Errors: ${JSON.stringify(checkErrors, null, 4)}`);
 }
 
-if (import.meta["main"]) {
+if (import.meta.main) {
     main();
 }

@@ -37,6 +37,6 @@ i + "aaa"
     console.log(errors);
 }
 
-if (import.meta["main"]) {
+if (import.meta.main) {
     main();
 }

@@ -1,8 +1,8 @@
 import { Token } from "../compiler/ast.ts";
 import { Lexer } from "../compiler/lexer.ts";
-import { Message, Server } from "./server.ts";
+import { Request, Server } from "./server.ts";
 
-export function handle_semantic_tokens_full(server: Server, msg: Message) {
+export function handle_semantic_tokens_full(server: Server, msg: Request) {
     let uri = msg.params.textDocument.uri;
     let input = server.fs.read(uri);
     let lexer = new Lexer();
@@ -56,8 +56,8 @@ export function handle_semantic_tokens_full(server: Server, msg: Message) {
         data.push(deltaLine, deltaChar, length, type, tokenModifiers);
         prev_token = token;
     }
-    let params = {
+    let result = {
         data,
     };
-    server.send_response(msg.id, params);
+    server.send_response(msg.id, result);
 }
