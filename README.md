@@ -2,6 +2,13 @@
 
 The language server for the Poor programming language
 
+## Capabilities
+
+- [x] Diagnostics
+- [x] Completion
+- [x] Hover
+- [x] Semantic tokens
+
 ## Requirement
 
 * npm
